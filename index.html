@@ -1,27 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Modificador de Voz</title>
   <style>
-    body { font-family: sans-serif; background: #f0f4f8; text-align: center; padding: 30px; }
-    h1 { font-size: 24px; margin-bottom: 20px; }
-    button { padding: 10px 20px; margin: 10px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
+    body { font-family: sans-serif; background: #f4f4f4; text-align: center; padding: 20px; }
+    h1 { margin-bottom: 20px; }
+    button { padding: 10px 15px; margin: 5px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; }
     #record { background: #007bff; color: white; }
     #stop { background: #dc3545; color: white; }
     .effect { background: #28a745; color: white; }
-    audio { margin-top: 20px; }
+    audio { margin-top: 20px; width: 100%; max-width: 400px; }
   </style>
 </head>
 <body>
 
-<h1>🎙️ Modificador de Voz: Hélio, Grave, Robô, Eco</h1>
+<h1>🎙️ Modificador de Voz</h1>
 
-<button id="record">Gravar</button>
-<button id="stop" disabled>Parar</button>
+<button id="record">🎤 Gravar</button>
+<button id="stop" disabled>🛑 Parar</button>
 
 <div id="effects" style="display:none;">
+  <p>Efeitos:</p>
   <button class="effect" onclick="playEffect('normal')">▶️ Original</button>
   <button class="effect" onclick="playEffect('helium')">🎈 Hélio</button>
   <button class="effect" onclick="playEffect('deep')">💀 Grave</button>
@@ -44,12 +45,14 @@ document.getElementById('record').onclick = async () => {
   mediaRecorder.start();
   mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
   mediaRecorder.onstop = async () => {
-    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    const arrayBuffer = await audioBlob.arrayBuffer();
-    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' }); // melhor compatibilidade
     player.src = URL.createObjectURL(audioBlob);
     player.style.display = 'block';
     document.getElementById('effects').style.display = 'block';
+
+    // Decodifica para efeitos
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
   };
   document.getElementById('record').disabled = true;
   document.getElementById('stop').disabled = false;
@@ -62,10 +65,11 @@ document.getElementById('stop').onclick = () => {
 };
 
 function playEffect(type) {
+  if (!audioBuffer) return;
+
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
-
-  let effectChain = source;
+  let node = source;
 
   switch (type) {
     case 'helium':
@@ -77,35 +81,34 @@ function playEffect(type) {
       break;
 
     case 'robot': {
-      const ringMod = audioCtx.createGain();
+      const gainNode = audioCtx.createGain();
       const osc = audioCtx.createOscillator();
-      osc.frequency.value = 90;
-      osc.connect(ringMod.gain);
+      osc.frequency.value = 100;
+      osc.connect(gainNode.gain);
       osc.start();
-      effectChain.connect(ringMod);
-      effectChain = ringMod;
+      node.connect(gainNode);
+      node = gainNode;
       break;
     }
 
     case 'echo': {
       const delay = audioCtx.createDelay();
-      delay.delayTime.value = 0.3;
+      delay.delayTime.value = 0.25;
       const feedback = audioCtx.createGain();
       feedback.gain.value = 0.4;
       delay.connect(feedback);
       feedback.connect(delay);
-      effectChain.connect(delay);
-      effectChain = delay;
+      node.connect(delay);
+      node = delay;
       break;
     }
 
     case 'normal':
     default:
       source.playbackRate.value = 1;
-      break;
   }
 
-  effectChain.connect(audioCtx.destination);
+  node.connect(audioCtx.destination);
   source.start();
 }
 </script>
