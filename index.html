@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Modificador de Voz</title>
+  <title>Modificador de Voz - Hélio e Outros</title>
   <style>
-    body { font-family: sans-serif; background: #f4f4f4; text-align: center; padding: 20px; }
-    h1 { margin-bottom: 20px; }
-    button { padding: 10px 15px; margin: 5px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; }
+    body { font-family: sans-serif; background: #eef2f3; text-align: center; padding: 30px; }
+    h1 { margin-bottom: 20px; font-size: 24px; }
+    button { padding: 12px 20px; margin: 10px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
     #record { background: #007bff; color: white; }
     #stop { background: #dc3545; color: white; }
     .effect { background: #28a745; color: white; }
-    audio { margin-top: 20px; width: 100%; max-width: 400px; }
   </style>
 </head>
 <body>
@@ -22,7 +21,7 @@
 <button id="stop" disabled>🛑 Parar</button>
 
 <div id="effects" style="display:none;">
-  <p>Efeitos:</p>
+  <p><strong>Efeitos:</strong></p>
   <button class="effect" onclick="playEffect('normal')">▶️ Original</button>
   <button class="effect" onclick="playEffect('helium')">🎈 Hélio</button>
   <button class="effect" onclick="playEffect('deep')">💀 Grave</button>
@@ -30,30 +29,26 @@
   <button class="effect" onclick="playEffect('echo')">🌌 Eco</button>
 </div>
 
-<audio id="player" controls style="display:none;"></audio>
-
 <script>
 let mediaRecorder, audioChunks = [], audioBlob, audioBuffer;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
-const player = document.getElementById('player');
 
 document.getElementById('record').onclick = async () => {
   audioChunks = [];
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   mediaRecorder = new MediaRecorder(stream);
   mediaRecorder.start();
-  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-  mediaRecorder.onstop = async () => {
-    audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' }); // melhor compatibilidade
-    player.src = URL.createObjectURL(audioBlob);
-    player.style.display = 'block';
-    document.getElementById('effects').style.display = 'block';
 
-    // Decodifica para efeitos
+  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+  mediaRecorder.onstop = async () => {
+    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
     const arrayBuffer = await audioBlob.arrayBuffer();
     audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    document.getElementById('effects').style.display = 'block';
   };
+
   document.getElementById('record').disabled = true;
   document.getElementById('stop').disabled = false;
 };
@@ -64,14 +59,14 @@ document.getElementById('stop').onclick = () => {
   document.getElementById('stop').disabled = true;
 };
 
-function playEffect(type) {
+function playEffect(effectType) {
   if (!audioBuffer) return;
 
   const source = audioCtx.createBufferSource();
   source.buffer = audioBuffer;
   let node = source;
 
-  switch (type) {
+  switch (effectType) {
     case 'helium':
       source.playbackRate.value = 1.7;
       break;
@@ -81,13 +76,13 @@ function playEffect(type) {
       break;
 
     case 'robot': {
-      const gainNode = audioCtx.createGain();
+      const gain = audioCtx.createGain();
       const osc = audioCtx.createOscillator();
       osc.frequency.value = 100;
-      osc.connect(gainNode.gain);
+      osc.connect(gain.gain);
       osc.start();
-      node.connect(gainNode);
-      node = gainNode;
+      node.connect(gain);
+      node = gain;
       break;
     }
 
@@ -105,7 +100,8 @@ function playEffect(type) {
 
     case 'normal':
     default:
-      source.playbackRate.value = 1;
+      source.playbackRate.value = 1.0;
+      break;
   }
 
   node.connect(audioCtx.destination);
