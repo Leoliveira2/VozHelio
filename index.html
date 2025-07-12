@@ -3,110 +3,435 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Modificador de Voz - Hélio e Outros</title>
+  <title>Modificador de Voz - Gás Hélio</title>
   <style>
-    body { font-family: sans-serif; background: #eef2f3; text-align: center; padding: 30px; }
-    h1 { margin-bottom: 20px; font-size: 24px; }
-    button { padding: 12px 20px; margin: 10px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
-    #record { background: #007bff; color: white; }
-    #stop { background: #dc3545; color: white; }
-    .effect { background: #28a745; color: white; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px;
+      text-align: center;
+      min-height: 100vh;
+      margin: 0;
+      color: white;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .controls {
+      margin: 30px 0;
+    }
+    
+    button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    #record { 
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4); }
+      50% { box-shadow: 0 4px 25px rgba(40, 167, 69, 0.8); }
+      100% { box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4); }
+    }
+    
+    #stop { 
+      background: linear-gradient(45deg, #dc3545, #fd7e14);
+      color: white;
+    }
+    
+    .effect { 
+      background: linear-gradient(45deg, #6f42c1, #e83e8c);
+      color: white;
+      margin: 5px;
+    }
+    
+    .effect.helium {
+      background: linear-gradient(45deg, #ffc107, #fd7e14);
+      animation: bounce 1s infinite alternate;
+    }
+    
+    @keyframes bounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-5px); }
+    }
+    
+    #effects {
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    #msg {
+      margin-top: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      padding: 15px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      min-height: 20px;
+    }
+    
+    .recording {
+      background: rgba(220, 53, 69, 0.2) !important;
+      border: 2px solid #dc3545 !important;
+      animation: recordingBlink 1s infinite;
+    }
+    
+    @keyframes recordingBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-ready { background: #28a745; }
+    .status-recording { background: #dc3545; animation: blink 1s infinite; }
+    .status-processing { background: #ffc107; }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    
+    .error {
+      background: rgba(220, 53, 69, 0.2) !important;
+      border: 1px solid #dc3545 !important;
+      color: #ffcdd2 !important;
+    }
+    
+    .success {
+      background: rgba(40, 167, 69, 0.2) !important;
+      border: 1px solid #28a745 !important;
+      color: #c8e6c9 !important;
+    }
   </style>
 </head>
 <body>
 
-<h1>🎙️ Modificador de Voz</h1>
+<div class="container">
+  <h1>🎙️ Modificador de Voz com Efeitos</h1>
+  
+  <div class="controls">
+    <button id="record">🎤 Gravar</button>
+    <button id="stop" disabled>🛑 Parar</button>
+  </div>
 
-<button id="record">🎤 Gravar</button>
-<button id="stop" disabled>🛑 Parar</button>
+  <div id="effects" style="display:none;">
+    <p><strong>🎚️ Escolha um efeito:</strong></p>
+    <button class="effect" onclick="playEffect('normal')">▶️ Original</button>
+    <button class="effect helium" onclick="playEffect('helium')">🎈 Hélio</button>
+    <button class="effect" onclick="playEffect('deep')">💀 Grave</button>
+    <button class="effect" onclick="playEffect('robot')">🤖 Robô</button>
+    <button class="effect" onclick="playEffect('echo')">🌌 Eco</button>
+    <button class="effect" onclick="playEffect('chipmunk')">🐿️ Esquilo</button>
+  </div>
 
-<div id="effects" style="display:none;">
-  <p><strong>Efeitos:</strong></p>
-  <button class="effect" onclick="playEffect('normal')">▶️ Original</button>
-  <button class="effect" onclick="playEffect('helium')">🎈 Hélio</button>
-  <button class="effect" onclick="playEffect('deep')">💀 Grave</button>
-  <button class="effect" onclick="playEffect('robot')">🤖 Robô</button>
-  <button class="effect" onclick="playEffect('echo')">🌌 Eco</button>
+  <div id="msg">
+    <span class="status-indicator status-ready"></span>
+    Pronto para gravar! Clique em "Gravar" para começar.
+  </div>
 </div>
 
 <script>
 let mediaRecorder, audioChunks = [], audioBlob, audioBuffer;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
+let audioCtx;
+
+// Verificar compatibilidade do navegador
+function checkCompatibility() {
+  const issues = [];
+  
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    issues.push("Seu navegador não suporta acesso ao microfone");
+  }
+  
+  if (!window.MediaRecorder) {
+    issues.push("Seu navegador não suporta gravação de áudio");
+  }
+  
+  if (!AudioContext) {
+    issues.push("Seu navegador não suporta processamento de áudio");
+  }
+  
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    issues.push("Esta página precisa ser servida via HTTPS para funcionar");
+  }
+  
+  if (issues.length > 0) {
+    showMessage("❌ Problemas encontrados: " + issues.join("; "), "error");
+    return false;
+  }
+  
+  return true;
+}
+
+// Inicializar AudioContext
+function initAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+  }
+  
+  // Reativar contexto se estiver suspenso
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
 
 document.getElementById('record').onclick = async () => {
-  audioChunks = [];
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-  mediaRecorder.start();
+  if (!checkCompatibility()) return;
+  
+  try {
+    initAudioContext();
+    
+    audioChunks = [];
+    showMessage("🎤 Solicitando permissão do microfone...", "processing");
+    
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
+    
+    mediaRecorder = new MediaRecorder(stream, {
+      mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+    });
+    
+    mediaRecorder.start();
 
-  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) {
+        audioChunks.push(e.data);
+      }
+    };
 
-  mediaRecorder.onstop = async () => {
-    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    const arrayBuffer = await audioBlob.arrayBuffer();
-    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    document.getElementById('effects').style.display = 'block';
-  };
+    mediaRecorder.onstop = async () => {
+      try {
+        showMessage("🔄 Processando áudio...", "processing");
+        
+        audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        document.getElementById('effects').style.display = 'block';
+        showMessage("✅ Gravação pronta! Escolha um efeito para reproduzir.", "success");
+        
+        // Parar todas as faixas para liberar o microfone
+        stream.getTracks().forEach(track => track.stop());
+        
+      } catch (error) {
+        console.error('Erro ao processar áudio:', error);
+        showMessage("❌ Erro ao processar o áudio. Tente novamente.", "error");
+      }
+    };
 
-  document.getElementById('record').disabled = true;
-  document.getElementById('stop').disabled = false;
+    mediaRecorder.onerror = (error) => {
+      console.error('Erro no MediaRecorder:', error);
+      showMessage("❌ Erro durante a gravação. Tente novamente.", "error");
+    };
+
+    document.getElementById('record').disabled = true;
+    document.getElementById('stop').disabled = false;
+    document.getElementById('msg').classList.add('recording');
+    showMessage("🎙️ Gravando... fale agora!", "recording");
+    
+  } catch (error) {
+    console.error('Erro ao acessar microfone:', error);
+    if (error.name === 'NotAllowedError') {
+      showMessage("❌ Permissão negada. Permita o acesso ao microfone.", "error");
+    } else {
+      showMessage("❌ Erro ao acessar microfone: " + error.message, "error");
+    }
+  }
 };
 
 document.getElementById('stop').onclick = () => {
-  mediaRecorder.stop();
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  
   document.getElementById('record').disabled = false;
   document.getElementById('stop').disabled = true;
+  document.getElementById('msg').classList.remove('recording');
 };
 
+function showMessage(msg, type = '') {
+  const msgElement = document.getElementById('msg');
+  msgElement.innerHTML = getStatusIcon(type) + msg;
+  
+  // Remover classes anteriores
+  msgElement.classList.remove('error', 'success', 'recording');
+  
+  // Adicionar nova classe se especificada
+  if (type) {
+    msgElement.classList.add(type);
+  }
+}
+
+function getStatusIcon(type) {
+  const icons = {
+    'ready': '<span class="status-indicator status-ready"></span>',
+    'recording': '<span class="status-indicator status-recording"></span>',
+    'processing': '<span class="status-indicator status-processing"></span>',
+    'success': '<span class="status-indicator status-ready"></span>',
+    'error': '<span class="status-indicator" style="background: #dc3545;"></span>'
+  };
+  
+  return icons[type] || icons['ready'];
+}
+
 function playEffect(effectType) {
-  if (!audioBuffer) return;
-
-  const source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
-  let node = source;
-
-  switch (effectType) {
-    case 'helium':
-      source.playbackRate.value = 1.7;
-      break;
-
-    case 'deep':
-      source.playbackRate.value = 0.6;
-      break;
-
-    case 'robot': {
-      const gain = audioCtx.createGain();
-      const osc = audioCtx.createOscillator();
-      osc.frequency.value = 100;
-      osc.connect(gain.gain);
-      osc.start();
-      node.connect(gain);
-      node = gain;
-      break;
-    }
-
-    case 'echo': {
-      const delay = audioCtx.createDelay();
-      delay.delayTime.value = 0.25;
-      const feedback = audioCtx.createGain();
-      feedback.gain.value = 0.4;
-      delay.connect(feedback);
-      feedback.connect(delay);
-      node.connect(delay);
-      node = delay;
-      break;
-    }
-
-    case 'normal':
-    default:
-      source.playbackRate.value = 1.0;
-      break;
+  if (!audioBuffer) {
+    showMessage("❌ Nenhum áudio gravado. Grave primeiro!", "error");
+    return;
   }
 
-  node.connect(audioCtx.destination);
-  source.start();
+  try {
+    // Parar qualquer áudio que esteja tocando
+    audioCtx.suspend().then(() => {
+      audioCtx.resume().then(() => {
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        let finalNode = source;
+
+        switch (effectType) {
+          case 'helium':
+            source.playbackRate.value = 1.7;
+            showMessage("🎈 Reproduzindo com efeito HÉLIO - Voz super aguda!", "success");
+            break;
+
+          case 'chipmunk':
+            source.playbackRate.value = 2.2;
+            showMessage("🐿️ Reproduzindo como ESQUILO - Ainda mais agudo!", "success");
+            break;
+
+          case 'deep':
+            source.playbackRate.value = 0.6;
+            showMessage("💀 Reproduzindo com efeito GRAVE - Voz profunda!", "success");
+            break;
+
+          case 'robot': {
+            const gain = audioCtx.createGain();
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = 100;
+            osc.connect(gain.gain);
+            osc.start();
+            osc.stop(audioCtx.currentTime + audioBuffer.duration);
+            source.connect(gain);
+            finalNode = gain;
+            showMessage("🤖 Reproduzindo com efeito ROBÔ - Voz robotizada!", "success");
+            break;
+          }
+
+          case 'echo': {
+            const delay = audioCtx.createDelay();
+            delay.delayTime.value = 0.25;
+            const feedback = audioCtx.createGain();
+            feedback.gain.value = 0.4;
+            const wet = audioCtx.createGain();
+            wet.gain.value = 0.5;
+            
+            delay.connect(feedback);
+            feedback.connect(delay);
+            source.connect(delay);
+            delay.connect(wet);
+            
+            // Mix sinal original com eco
+            const mixer = audioCtx.createGain();
+            source.connect(mixer);
+            wet.connect(mixer);
+            finalNode = mixer;
+            
+            showMessage("🌌 Reproduzindo com efeito ECO - Voz espacial!", "success");
+            break;
+          }
+
+          case 'normal':
+          default:
+            source.playbackRate.value = 1.0;
+            showMessage("▶️ Reproduzindo áudio original", "success");
+            break;
+        }
+
+        finalNode.connect(audioCtx.destination);
+        source.start();
+        
+        // Callback quando o áudio terminar
+        source.onended = () => {
+          showMessage("✅ Reprodução finalizada. Escolha outro efeito ou grave novamente.", "ready");
+        };
+      });
+    });
+    
+  } catch (error) {
+    console.error('Erro ao reproduzir efeito:', error);
+    showMessage("❌ Erro ao reproduzir efeito. Tente novamente.", "error");
+  }
 }
+
+// Inicializar quando a página carregar
+window.addEventListener('load', () => {
+  if (checkCompatibility()) {
+    showMessage("✅ Pronto para gravar! Clique em 'Gravar' para começar.", "ready");
+  }
+});
+
+// Tratar quando o usuário interage pela primeira vez (necessário para AudioContext)
+document.addEventListener('click', () => {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}, { once: true });
 </script>
 
 </body>
