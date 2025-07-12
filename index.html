@@ -1,108 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Voice Fun – Hélio & Cia</title>
-<script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Modificador de Voz</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f4f8; text-align: center; padding: 30px; }
+    h1 { font-size: 24px; margin-bottom: 20px; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
+    #record { background: #007bff; color: white; }
+    #stop { background: #dc3545; color: white; }
+    .effect { background: #28a745; color: white; }
+    audio { margin-top: 20px; }
+  </style>
 </head>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen">
-<div class="bg-white shadow-xl rounded-xl p-8 w-full max-w-md space-y-6">
-  <h1 class="text-2xl font-semibold text-center">🎙️ Voice Fun</h1>
+<body>
 
-  <!-- Controles -->
-  <div class="flex justify-center gap-4">
-    <button id="recBtn"   class="btn">Gravar</button>
-    <button id="stopBtn"  class="btn" disabled>Parar</button>
-  </div>
+<h1>🎙️ Modificador de Voz: Hélio, Grave, Robô, Eco</h1>
 
-  <div id="effects" class="grid grid-cols-2 gap-4 text-center opacity-0 pointer-events-none">
-    <button data-effect="normal" class="effect">Original</button>
-    <button data-effect="helium" class="effect">Hélio</button>
-    <button data-effect="deep"   class="effect">Grave</button>
-    <button data-effect="robot"  class="effect">Robô</button>
-    <button data-effect="echo"   class="effect col-span-2">Eco</button>
-  </div>
+<button id="record">Gravar</button>
+<button id="stop" disabled>Parar</button>
 
-  <audio id="player" controls class="w-full mt-2 hidden"></audio>
+<div id="effects" style="display:none;">
+  <button class="effect" onclick="playEffect('normal')">▶️ Original</button>
+  <button class="effect" onclick="playEffect('helium')">🎈 Hélio</button>
+  <button class="effect" onclick="playEffect('deep')">💀 Grave</button>
+  <button class="effect" onclick="playEffect('robot')">🤖 Robô</button>
+  <button class="effect" onclick="playEffect('echo')">🌌 Eco</button>
 </div>
 
-<style>
-  .btn{ @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-40;}
-  .effect{@apply bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600;}
-</style>
+<audio id="player" controls style="display:none;"></audio>
 
 <script>
-const recBtn   = document.getElementById('recBtn');
-const stopBtn  = document.getElementById('stopBtn');
-const effects  = document.getElementById('effects');
-const player   = document.getElementById('player');
-
-let mediaRecorder, audioChunks = [], audioBuffer;
-
-// === Configurações de áudio ===
+let mediaRecorder, audioChunks = [], audioBlob, audioBuffer;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
-const ctx = new AudioContext();
+const audioCtx = new AudioContext();
+const player = document.getElementById('player');
 
-// gravação ---------------------------------------------------------------
-recBtn.onclick = async () => {
+document.getElementById('record').onclick = async () => {
   audioChunks = [];
-  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   mediaRecorder = new MediaRecorder(stream);
   mediaRecorder.start();
   mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
   mediaRecorder.onstop = async () => {
-    const blob = new Blob(audioChunks, {type:'audio/webm'});
-    const arrayBuffer = await blob.arrayBuffer();
-    audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    player.src = URL.createObjectURL(blob);
-    player.classList.remove('hidden');
-    effects.classList.remove('opacity-0','pointer-events-none');
+    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    player.src = URL.createObjectURL(audioBlob);
+    player.style.display = 'block';
+    document.getElementById('effects').style.display = 'block';
   };
-  recBtn.disabled = true; stopBtn.disabled = false;
+  document.getElementById('record').disabled = true;
+  document.getElementById('stop').disabled = false;
 };
-stopBtn.onclick = () => { mediaRecorder.stop(); recBtn.disabled = false; stopBtn.disabled = true; };
 
-// reprodução com efeitos -----------------------------------------------
-effects.onclick = e => {
-  const eff = e.target.dataset.effect;
-  if(!eff || !audioBuffer) return;
+document.getElementById('stop').onclick = () => {
+  mediaRecorder.stop();
+  document.getElementById('record').disabled = false;
+  document.getElementById('stop').disabled = true;
+};
 
-  const src = ctx.createBufferSource();
-  src.buffer = audioBuffer;
+function playEffect(type) {
+  const source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
 
-  let nodeChainEnd = src;           // ponta da cadeia para conectar ao destino
-  switch(eff){
+  let effectChain = source;
+
+  switch (type) {
     case 'helium':
-      src.playbackRate.value = 1.7;
+      source.playbackRate.value = 1.7;
       break;
+
     case 'deep':
-      src.playbackRate.value = 0.6;
+      source.playbackRate.value = 0.6;
       break;
+
     case 'robot': {
-      const ring = ctx.createGain();
-      const osc  = ctx.createOscillator();
-      osc.frequency.value = 100;    // modulação ~100 Hz
-      osc.connect(ring.gain); osc.start();
-      nodeChainEnd.connect(ring);
-      nodeChainEnd = ring;
+      const ringMod = audioCtx.createGain();
+      const osc = audioCtx.createOscillator();
+      osc.frequency.value = 90;
+      osc.connect(ringMod.gain);
+      osc.start();
+      effectChain.connect(ringMod);
+      effectChain = ringMod;
       break;
     }
+
     case 'echo': {
-      const delay = ctx.createDelay(1.0);
-      delay.delayTime.value = 0.25;
-      const fb = ctx.createGain(); fb.gain.value = 0.4;
-      delay.connect(fb); fb.connect(delay);
-      nodeChainEnd.connect(delay);
-      nodeChainEnd = delay;
+      const delay = audioCtx.createDelay();
+      delay.delayTime.value = 0.3;
+      const feedback = audioCtx.createGain();
+      feedback.gain.value = 0.4;
+      delay.connect(feedback);
+      feedback.connect(delay);
+      effectChain.connect(delay);
+      effectChain = delay;
       break;
     }
-    // normal -> sem alterações
+
+    case 'normal':
+    default:
+      source.playbackRate.value = 1;
+      break;
   }
 
-  nodeChainEnd.connect(ctx.destination);
-  src.start();
-};
+  effectChain.connect(audioCtx.destination);
+  source.start();
+}
 </script>
+
 </body>
 </html>
