@@ -90,6 +90,31 @@
       animation: bounce 1s infinite alternate;
     }
     
+    .effect.metal {
+      background: linear-gradient(45deg, #000000, #8b0000);
+      box-shadow: 0 4px 15px rgba(139, 0, 0, 0.5);
+    }
+    
+    .effect.smurf {
+      background: linear-gradient(45deg, #4169e1, #87ceeb);
+      animation: wiggle 0.5s infinite alternate;
+    }
+    
+    .effect.ivete {
+      background: linear-gradient(45deg, #ff1493, #ffd700);
+      animation: sparkle 1.5s infinite;
+    }
+    
+    @keyframes wiggle {
+      0% { transform: rotate(-3deg); }
+      100% { transform: rotate(3deg); }
+    }
+    
+    @keyframes sparkle {
+      0%, 100% { box-shadow: 0 4px 15px rgba(255, 20, 147, 0.3); }
+      50% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.8); }
+    }
+    
     @keyframes bounce {
       0% { transform: translateY(0); }
       100% { transform: translateY(-5px); }
@@ -173,6 +198,11 @@
     <button class="effect" onclick="playEffect('robot')">🤖 Robô</button>
     <button class="effect" onclick="playEffect('echo')">🌌 Eco</button>
     <button class="effect" onclick="playEffect('chipmunk')">🐿️ Esquilo</button>
+    <hr style="border: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
+    <p><strong>🎭 Vozes Especiais:</strong></p>
+    <button class="effect metal" onclick="playEffect('tom_araya')">🤘 Tom Araya</button>
+    <button class="effect smurf" onclick="playEffect('smurf')">🟦 Smurf</button>
+    <button class="effect ivete" onclick="playEffect('ivete')">🎤 Ivete Sangalo</button>
   </div>
 
   <div id="msg">
@@ -401,6 +431,242 @@ function playEffect(effectType) {
             source.playbackRate.value = 1.0;
             showMessage("▶️ Reproduzindo áudio original", "success");
             break;
+            
+          case 'tom_araya': {
+            // Tom Araya MELHORADO - Mais agressivo e gutural
+            source.playbackRate.value = 0.65; // Ainda mais grave
+            
+            // Distorção PESADA para growl
+            const distortion = audioCtx.createWaveShaper();
+            const samples = 44100;
+            const curve = new Float32Array(samples);
+            
+            for (let i = 0; i < samples; i++) {
+              const x = (i * 2) / samples - 1;
+              // Distorção mais agressiva
+              curve[i] = Math.sign(x) * (1 - Math.exp(-Math.abs(x * 8)));
+            }
+            
+            distortion.curve = curve;
+            distortion.oversample = '4x';
+            
+            // EQ para frequências do metal
+            const lowMid = audioCtx.createBiquadFilter();
+            lowMid.type = 'peaking';
+            lowMid.frequency.value = 400;
+            lowMid.gain.value = 8;
+            lowMid.Q.value = 2;
+            
+            const highMid = audioCtx.createBiquadFilter();
+            highMid.type = 'peaking';
+            highMid.frequency.value = 2500;
+            highMid.gain.value = -6;
+            highMid.Q.value = 1;
+            
+            // Saturação adicional
+            const saturator = audioCtx.createWaveShaper();
+            const satCurve = new Float32Array(44100);
+            for (let i = 0; i < 44100; i++) {
+              const x = (i * 2) / 44100 - 1;
+              satCurve[i] = Math.tanh(x * 3);
+            }
+            saturator.curve = satCurve;
+            
+            // Reverb de arena
+            const convolver = audioCtx.createConvolver();
+            const impulseLength = audioCtx.sampleRate * 3;
+            const impulse = audioCtx.createBuffer(2, impulseLength, audioCtx.sampleRate);
+            
+            for (let channel = 0; channel < 2; channel++) {
+              const channelData = impulse.getChannelData(channel);
+              for (let i = 0; i < impulseLength; i++) {
+                const decay = Math.pow(1 - i / impulseLength, 4);
+                channelData[i] = (Math.random() * 2 - 1) * decay * 0.8;
+              }
+            }
+            convolver.buffer = impulse;
+            
+            // Chain de efeitos metal
+            source.connect(saturator);
+            saturator.connect(distortion);
+            distortion.connect(lowMid);
+            lowMid.connect(highMid);
+            highMid.connect(convolver);
+            finalNode = convolver;
+            
+            showMessage("🤘 RAINING BLOOOOD! Tom Araya BRUTAL - Prepare o headbang!", "success");
+            break;
+          }
+          
+          case 'smurf': {
+            // Smurf MELHORADO - Mais nasal e fofo
+            source.playbackRate.value = 2.1; // Mais agudo ainda
+            
+            // Formant shift para nasalização
+            const nasal = audioCtx.createBiquadFilter();
+            nasal.type = 'bandpass';
+            nasal.frequency.value = 1200; // Frequência nasal
+            nasal.Q.value = 8;
+            nasal.gain.value = 12;
+            
+            // Filtro passa-alta mais agressivo
+            const highpass = audioCtx.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = 300;
+            highpass.Q.value = 3;
+            
+            // Ring modulation para efeito "cartoon"
+            const ringMod = audioCtx.createOscillator();
+            ringMod.frequency.value = 15;
+            const ringGain = audioCtx.createGain();
+            ringGain.gain.value = 0.3;
+            
+            ringMod.connect(ringGain);
+            ringMod.start();
+            ringMod.stop(audioCtx.currentTime + audioBuffer.duration);
+            
+            // Chorus triplo para "fofura"
+            const delay1 = audioCtx.createDelay();
+            delay1.delayTime.value = 0.015;
+            const delay2 = audioCtx.createDelay();
+            delay2.delayTime.value = 0.025;
+            const delay3 = audioCtx.createDelay();
+            delay3.delayTime.value = 0.035;
+            
+            // LFO para chorus
+            const lfo = audioCtx.createOscillator();
+            lfo.frequency.value = 4;
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 0.008;
+            
+            lfo.connect(lfoGain);
+            lfoGain.connect(delay1.delayTime);
+            lfoGain.connect(delay2.delayTime);
+            lfo.start();
+            lfo.stop(audioCtx.currentTime + audioBuffer.duration);
+            
+            // Mixer com múltiplas camadas
+            const mixer = audioCtx.createGain();
+            const gain1 = audioCtx.createGain();
+            const gain2 = audioCtx.createGain();
+            const gain3 = audioCtx.createGain();
+            
+            gain1.gain.value = 0.4;
+            gain2.gain.value = 0.3;
+            gain3.gain.value = 0.3;
+            
+            source.connect(highpass);
+            highpass.connect(nasal);
+            nasal.connect(mixer); // Sinal direto
+            nasal.connect(delay1);
+            nasal.connect(delay2);
+            nasal.connect(delay3);
+            
+            delay1.connect(gain1);
+            delay2.connect(gain2);
+            delay3.connect(gain3);
+            
+            gain1.connect(mixer);
+            gain2.connect(mixer);
+            gain3.connect(mixer);
+            
+            finalNode = mixer;
+            
+            showMessage("🟦 Lá lá lá lá lá! Smurf AUTÊNTICO - Mais nasal e fofo!", "success");
+            break;
+          }
+          
+          case 'ivete': {
+            // Ivete MELHORADA - Mais energia e presença
+            source.playbackRate.value = 1.15; // Mais aguda
+            
+            // EQ de voz feminina potente
+            const lowCut = audioCtx.createBiquadFilter();
+            lowCut.type = 'highpass';
+            lowCut.frequency.value = 80;
+            lowCut.Q.value = 0.7;
+            
+            const presence = audioCtx.createBiquadFilter();
+            presence.type = 'peaking';
+            presence.frequency.value = 2800; // Presença vocal
+            presence.gain.value = 8;
+            presence.Q.value = 2;
+            
+            const air = audioCtx.createBiquadFilter();
+            air.type = 'highshelf';
+            air.frequency.value = 8000; // "Ar" na voz
+            air.gain.value = 4;
+            
+            // Compressor de palco
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.value = -15;
+            compressor.knee.value = 25;
+            compressor.ratio.value = 10;
+            compressor.attack.value = 0.0005;
+            compressor.release.value = 0.05;
+            
+            // Vibrato característico do axé
+            const vibrato = audioCtx.createOscillator();
+            vibrato.frequency.value = 6.2; // Vibrato do axé
+            const vibratoGain = audioCtx.createGain();
+            vibratoGain.gain.value = 0.004;
+            
+            const pitchShift = audioCtx.createDelay();
+            pitchShift.delayTime.value = 0.008;
+            
+            vibrato.connect(vibratoGain);
+            vibratoGain.connect(pitchShift.delayTime);
+            vibrato.start();
+            vibrato.stop(audioCtx.currentTime + audioBuffer.duration);
+            
+            // Reverb de Trio Elétrico
+            const convolver = audioCtx.createConvolver();
+            const impulseLength = audioCtx.sampleRate * 2.5;
+            const impulse = audioCtx.createBuffer(2, impulseLength, audioCtx.sampleRate);
+            
+            for (let channel = 0; channel < 2; channel++) {
+              const channelData = impulse.getChannelData(channel);
+              for (let i = 0; i < impulseLength; i++) {
+                const decay = Math.pow(1 - i / impulseLength, 2);
+                // Simula reverb de rua/carnaval
+                channelData[i] = (Math.random() * 2 - 1) * decay * 0.6;
+              }
+            }
+            convolver.buffer = impulse;
+            
+            // Exciter para brilho vocal
+            const exciter = audioCtx.createWaveShaper();
+            const exciterCurve = new Float32Array(44100);
+            for (let i = 0; i < 44100; i++) {
+              const x = (i * 2) / 44100 - 1;
+              exciterCurve[i] = x + 0.3 * Math.sin(x * 3);
+            }
+            exciter.curve = exciterCurve;
+            
+            // Chain completa
+            const dryGain = audioCtx.createGain();
+            dryGain.gain.value = 0.6;
+            const wetGain = audioCtx.createGain();
+            wetGain.gain.value = 0.4;
+            const mixer = audioCtx.createGain();
+            
+            source.connect(lowCut);
+            lowCut.connect(compressor);
+            compressor.connect(presence);
+            presence.connect(air);
+            air.connect(pitchShift);
+            pitchShift.connect(exciter);
+            exciter.connect(dryGain);
+            exciter.connect(convolver);
+            convolver.connect(wetGain);
+            dryGain.connect(mixer);
+            wetGain.connect(mixer);
+            
+            finalNode = mixer;
+            
+            showMessage("🎤 AXÉÉÉ! Ivete Sangalo PODEROSA - Energia do Carnaval!", "success");
+            break;
+          }
         }
 
         finalNode.connect(audioCtx.destination);
