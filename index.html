@@ -90,6 +90,31 @@
       animation: bounce 1s infinite alternate;
     }
     
+    .effect.metal {
+      background: linear-gradient(45deg, #000000, #8b0000);
+      box-shadow: 0 4px 15px rgba(139, 0, 0, 0.5);
+    }
+    
+    .effect.smurf {
+      background: linear-gradient(45deg, #4169e1, #87ceeb);
+      animation: wiggle 0.5s infinite alternate;
+    }
+    
+    .effect.ivete {
+      background: linear-gradient(45deg, #ff1493, #ffd700);
+      animation: sparkle 1.5s infinite;
+    }
+    
+    @keyframes wiggle {
+      0% { transform: rotate(-3deg); }
+      100% { transform: rotate(3deg); }
+    }
+    
+    @keyframes sparkle {
+      0%, 100% { box-shadow: 0 4px 15px rgba(255, 20, 147, 0.3); }
+      50% { box-shadow: 0 4px 25px rgba(255, 215, 0, 0.8); }
+    }
+    
     @keyframes bounce {
       0% { transform: translateY(0); }
       100% { transform: translateY(-5px); }
@@ -173,6 +198,11 @@
     <button class="effect" onclick="playEffect('robot')">🤖 Robô</button>
     <button class="effect" onclick="playEffect('echo')">🌌 Eco</button>
     <button class="effect" onclick="playEffect('chipmunk')">🐿️ Esquilo</button>
+    <hr style="border: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
+    <p><strong>🎭 Vozes Especiais:</strong></p>
+    <button class="effect metal" onclick="playEffect('tom_araya')">🤘 Tom Araya</button>
+    <button class="effect smurf" onclick="playEffect('smurf')">🟦 Smurf</button>
+    <button class="effect ivete" onclick="playEffect('ivete')">🎤 Ivete Sangalo</button>
   </div>
 
   <div id="msg">
@@ -401,6 +431,170 @@ function playEffect(effectType) {
             source.playbackRate.value = 1.0;
             showMessage("▶️ Reproduzindo áudio original", "success");
             break;
+            
+          case 'tom_araya': {
+            // Tom Araya - Voz grave e gutural do metal
+            source.playbackRate.value = 0.75; // Mais grave
+            
+            // Adicionar distorção característica do metal
+            const distortion = audioCtx.createWaveShaper();
+            const samples = 44100;
+            const curve = new Float32Array(samples);
+            const deg = Math.PI / 180;
+            
+            for (let i = 0; i < samples; i++) {
+              const x = (i * 2) / samples - 1;
+              curve[i] = ((3 + 20) * x * 20 * deg) / (Math.PI + 20 * Math.abs(x));
+            }
+            
+            distortion.curve = curve;
+            distortion.oversample = '4x';
+            
+            // Filtro passa-baixa para som mais "sujo"
+            const lowpass = audioCtx.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.value = 3000;
+            lowpass.Q.value = 1;
+            
+            // Reverb para dar profundidade
+            const convolver = audioCtx.createConvolver();
+            const impulseLength = audioCtx.sampleRate * 2;
+            const impulse = audioCtx.createBuffer(2, impulseLength, audioCtx.sampleRate);
+            
+            for (let channel = 0; channel < 2; channel++) {
+              const channelData = impulse.getChannelData(channel);
+              for (let i = 0; i < impulseLength; i++) {
+                channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / impulseLength, 2);
+              }
+            }
+            convolver.buffer = impulse;
+            
+            // Conectar efeitos em série
+            source.connect(distortion);
+            distortion.connect(lowpass);
+            lowpass.connect(convolver);
+            finalNode = convolver;
+            
+            showMessage("🤘 SLAAAYEEERRRR! Voz do Tom Araya - Brutal e gutural!", "success");
+            break;
+          }
+          
+          case 'smurf': {
+            // Smurf - Voz aguda e fofa
+            source.playbackRate.value = 1.8; // Bem agudo
+            
+            // Filtro passa-alta para realçar agudos
+            const highpass = audioCtx.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = 200;
+            highpass.Q.value = 2;
+            
+            // Compressor para suavizar
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.value = -24;
+            compressor.knee.value = 30;
+            compressor.ratio.value = 12;
+            compressor.attack.value = 0.003;
+            compressor.release.value = 0.25;
+            
+            // Chorus para dar o efeito "fofo"
+            const delay1 = audioCtx.createDelay();
+            delay1.delayTime.value = 0.02;
+            const delay2 = audioCtx.createDelay();
+            delay2.delayTime.value = 0.035;
+            
+            const lfo = audioCtx.createOscillator();
+            lfo.frequency.value = 3;
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 0.005;
+            
+            lfo.connect(lfoGain);
+            lfoGain.connect(delay1.delayTime);
+            lfo.start();
+            lfo.stop(audioCtx.currentTime + audioBuffer.duration);
+            
+            const mixer = audioCtx.createGain();
+            source.connect(highpass);
+            highpass.connect(compressor);
+            compressor.connect(mixer);
+            compressor.connect(delay1);
+            compressor.connect(delay2);
+            delay1.connect(mixer);
+            delay2.connect(mixer);
+            
+            finalNode = mixer;
+            
+            showMessage("🟦 La la la la la la! Voz de Smurf - Aguda e adorável!", "success");
+            break;
+          }
+          
+          case 'ivete': {
+            // Ivete Sangalo - Voz potente e vibrante
+            source.playbackRate.value = 1.1; // Levemente mais aguda
+            
+            // Exciter para dar brilho
+            const exciter = audioCtx.createBiquadFilter();
+            exciter.type = 'highshelf';
+            exciter.frequency.value = 3000;
+            exciter.gain.value = 6;
+            
+            // Compressor para força vocal
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.value = -18;
+            compressor.knee.value = 20;
+            compressor.ratio.value = 8;
+            compressor.attack.value = 0.001;
+            compressor.release.value = 0.1;
+            
+            // Vibrato característico
+            const vibrato = audioCtx.createOscillator();
+            vibrato.frequency.value = 5.5; // Vibrato rápido
+            const vibratoGain = audioCtx.createGain();
+            vibratoGain.gain.value = 0.002;
+            
+            const pitchShift = audioCtx.createDelay();
+            pitchShift.delayTime.value = 0.01;
+            
+            vibrato.connect(vibratoGain);
+            vibratoGain.connect(pitchShift.delayTime);
+            vibrato.start();
+            vibrato.stop(audioCtx.currentTime + audioBuffer.duration);
+            
+            // Reverb para presença de palco
+            const convolver = audioCtx.createConvolver();
+            const impulseLength = audioCtx.sampleRate * 1.5;
+            const impulse = audioCtx.createBuffer(2, impulseLength, audioCtx.sampleRate);
+            
+            for (let channel = 0; channel < 2; channel++) {
+              const channelData = impulse.getChannelData(channel);
+              for (let i = 0; i < impulseLength; i++) {
+                const n = impulseLength - i;
+                channelData[i] = (Math.random() * 2 - 1) * Math.pow(n / impulseLength, 3);
+              }
+            }
+            convolver.buffer = impulse;
+            
+            // Mixer para efeito de palco
+            const dryGain = audioCtx.createGain();
+            dryGain.gain.value = 0.7;
+            const wetGain = audioCtx.createGain();
+            wetGain.gain.value = 0.3;
+            const mixer = audioCtx.createGain();
+            
+            source.connect(compressor);
+            compressor.connect(exciter);
+            exciter.connect(pitchShift);
+            pitchShift.connect(dryGain);
+            pitchShift.connect(convolver);
+            convolver.connect(wetGain);
+            dryGain.connect(mixer);
+            wetGain.connect(mixer);
+            
+            finalNode = mixer;
+            
+            showMessage("🎤 PODEROSA! Voz da Ivete Sangalo - Energia pura do axé!", "success");
+            break;
+          }
         }
 
         finalNode.connect(audioCtx.destination);
